@@ -1,95 +1,94 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+import Stack from "@mui/material/Stack";
+import Button from "@mui/material/Button";
+import AdbOutlinedIcon from "@mui/icons-material/AdbOutlined";
 
-export default function Home() {
+// import Navbar from "@/component/nav/Navbar";
+
+import Top from "@/component/topimage/Top";
+
+import Home from "@/component/home/Home";
+
+import Rooms from "@/component/rooms/Rooms";
+
+// import Quick from "@/components/quick/Quick";
+import SnapBooking from "@/component/snapbooking/SnapBooking";
+
+import Service from "@/component/service/Service";
+
+import Team from "@/component/team/Team";
+
+import Testimonial from "@/component/testimonial/Testimonial";
+import Faqsection from "@/component/faqsection/Faqsection ";
+import Blog from "@/component/blog/Blog";
+
+import Footer from "@/component/footer/Footer";
+
+
+export default function Homes() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.js</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <main>
+      {/* <Top /> */}
+      {/* <Navbar /> */}
+      <Home />
+      <Rooms />
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      {/* <Quick /> */}
+      <SnapBooking />
+
+      <Service />
+
+      <Team />
+      <Testimonial />
+      <Faqsection />
+      <Blog />
+      
+      {/* <Footer /> */}
+    </main>
   );
 }
+
+// ------------------------------------------------------------------------------------------
+// import * as React from 'react';
+// import Stack from '@mui/material/Stack';
+// import Button from '@mui/material/Button';
+
+// import DeleteIcon from '@mui/icons-material/Delete';
+// import SendIcon from '@mui/icons-material/Send';
+// import DownloadIcon from '@mui/icons-material/Download';
+// import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
+
+// import AdbOutlinedIcon from '@mui/icons-material/AdbOutlined';
+
+// import AccessibleOutlinedIcon from '@mui/icons-material/AccessibleOutlined';
+
+// export default function Home() {
+//   return (
+//     <div>
+
+//     <h1>
+//       Hotel Hub
+//     </h1>
+
+//     <Stack spacing={2} direction="row">
+//       <Button variant="outlined">Outlined</Button>
+
+//       <Button color="secondary">Secondary</Button>
+
+//       <Button variant="outlined" color="error">
+//         <AccessibleOutlinedIcon/>
+//       </Button>
+
+//       <Button variant="contained" endIcon={<SendIcon />}>
+//         Send
+//       </Button>
+
+//       <Button variant="outlined" startIcon={<DownloadIcon />}>
+//         Download
+//       </Button>
+
+//     </Stack>
+
+//     </div>
+//   );
+// }

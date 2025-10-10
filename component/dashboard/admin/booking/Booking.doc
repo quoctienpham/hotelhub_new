@@ -1,0 +1,922 @@
+Rất tuyệt — bạn đang xem một component React phức tạp trong Next.js (Client Component) để hiển thị và chỉnh sửa chi tiết booking (đặt phòng).
+Mình sẽ phân tích chi tiết từng phần, từ trên xuống dưới — để bạn hiểu toàn bộ cơ chế hoạt động, từng hàm, props, và cách UI + logic vận hành. 👇
+
+🧩 1. Khai báo chế độ và import thư viện
+"use client";
+
+
+Đây là directive của Next.js 13+, cho biết file này là Client Component — có thể dùng state, event, hooks (useState, useEffect...).
+
+Nếu không có dòng này, Next.js sẽ coi đây là Server Component (chỉ render server-side, không có event handler).
+
+import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  MenuItem,
+  Button,
+  Divider,
+  Chip,
+  Stack,
+  Modal,
+  IconButton,
+  Skeleton,
+} from "@mui/material";
+import { styled } from "@mui/material/styles";
+import RoomAssignment from "./RoomAssignment";
+
+Giải thích:
+
+React, useState, useEffect: hooks cơ bản của React.
+
+@mui/material: thư viện Material UI — cung cấp các component giao diện sẵn như Button, TextField, Grid, Card...
+
+styled(): API của MUI để tạo component có style tùy chỉnh.
+
+RoomAssignment: component con, hiển thị/assign phòng cụ thể cho booking.
+
+🎨 2. Styled Components (tùy biến UI)
+✳️ SummaryCard
+const SummaryCard = styled(Card)(({ theme, color }) => ({
+  borderLeft: `4px solid ${theme.palette[color].main}`,
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "center",
+  transition: "transform 0.2s",
+  "&:hover": {
+    transform: "translateY(-2px)",
+  },
+}));
+
+
+Tạo 1 thẻ Card có viền trái màu động theo color (primary, secondary...).
+
+Có hiệu ứng hover nhẹ.
+
+Dùng trong phần tổng quan booking.
+
+✳️ SectionHeader
+const SectionHeader = styled(Typography)(({ theme }) => ({
+  marginBottom: theme.spacing(2),
+  fontWeight: 600,
+  color: theme.palette.text.primary,
+  display: "flex",
+  alignItems: "center",
+  "&:before": {
+    content: '""',
+    display: "block",
+    width: "4px",
+    height: "20px",
+    backgroundColor: theme.palette.primary.main,
+    marginRight: theme.spacing(1),
+    borderRadius: "2px",
+  },
+}));
+
+
+Dùng để hiển thị tiêu đề của từng section (ví dụ: “Booking Details”, “Customer Information”...).
+
+Có thanh màu xanh dọc ở đầu — tạo điểm nhấn thẩm mỹ.
+
+📦 3. Component chính: BookingDetails
+const BookingDetails = ({ booking, onFieldChange, onSave, onCancel }) => { ... }
+
+Props:
+
+booking: đối tượng thông tin đặt phòng (từ server hoặc danh sách booking).
+
+onFieldChange(newBooking): callback khi người dùng thay đổi dữ liệu (ví dụ chọn ngày, chỉnh số phòng).
+
+onSave(): callback khi nhấn "Save Changes".
+
+onCancel(): callback khi nhấn "Cancel".
+
+🧠 4. Hàm tiện ích (Helper Functions)
+🕐 formatDateForInput()
+const formatDateForInput = (dateString) => {
+  if (!dateString) return "";
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "";
+    return date.toISOString().split("T")[0];
+  } catch (e) {
+    console.error("Date formatting error:", e);
+    return "";
+  }
+};
+
+
+Chuyển check_in hoặc check_out từ Date sang định dạng "YYYY-MM-DD", dùng được cho <input type="date">.
+
+Có kiểm tra lỗi an toàn.
+
+🗓️ formatDateForDisplay()
+
+Hiển thị ngày dưới dạng dễ đọc:
+
+Feb 5, 2025
+
+🌙 calculateTotalNights()
+
+Tính số đêm giữa check_in và check_out:
+
+return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+
+→ chuyển milliseconds thành ngày, làm tròn lên (phòng trường hợp check-out khác ngày nhưng chưa tròn 24h).
+
+🔁 handleDateChange(field, value)
+
+Gọi khi người dùng đổi ngày check-in/check-out.
+
+Tạo bản copy newBooking, cập nhật ngày mới.
+
+Nếu cả 2 ngày đều hợp lệ:
+
+Tính lại số đêm (total_night)
+
+Cập nhật subtotal = nights * pricePerNight * number_of_rooms
+
+Cập nhật total_price = subtotal - discount
+
+Gọi onFieldChange(newBooking) để báo ngược lên parent (lifting state).
+
+💬 getStatusChip(status) và getPaymentChip(paymentStatus)
+
+Trả về Chip có màu + nhãn trạng thái tương ứng:
+
+active → Confirmed (xanh)
+inactive → Pending (vàng)
+cancelled → Cancelled (đỏ)
+
+💡 5. Render khi chưa có dữ liệu
+if (!booking) {
+  return (
+    <Box sx={{ p: 3 }}>
+      <Skeleton variant="rectangular" height={400} />
+    </Box>
+  );
+}
+
+
+Dùng Skeleton để hiển thị khung tải tạm (UX thân thiện).
+
+🧱 6. Giao diện hiển thị thông tin
+🔹 Tổng quan (Summary cards)
+
+Gồm 4 cột:
+
+Mã booking (booking.code)
+
+Ngày tạo (createdAt)
+
+Phương thức thanh toán (payment_method)
+
+Trạng thái thanh toán + đặt phòng (payment_status, status)
+
+→ sử dụng các SummaryCard styled.
+
+🔹 Chi tiết booking (Booking Details)
+
+Hiển thị thông tin:
+
+Loại phòng, giá/đêm, số lượng phòng
+
+Check-in, Check-out
+
+Số khách
+
+Tính toán lại giá khi thay đổi ngày hoặc số phòng.
+
+⚙️ Có logic kiểm tra availableRooms để tránh vượt số lượng phòng trống.
+
+🔹 Tổng tiền (Subtotal / Discount / Total)
+subtotal = nights * pricePerNight * rooms
+total_price = subtotal - discount
+
+🔹 Quản lý trạng thái (Status Management)
+
+Hai dropdown để cập nhật:
+
+Payment Status (Pending / Paid)
+
+Booking Status (Pending / Confirmed / Cancelled)
+
+🔹 Thông tin khách hàng (Customer Information)
+
+Hiển thị:
+
+Họ tên
+
+Email
+
+Số điện thoại
+(Các input bị disable chỉnh sửa trực tiếp để tránh thay đổi ngoài ý muốn.)
+
+🔹 Nút hành động (Buttons)
+<Button variant="outlined" onClick={onCancel}>Cancel</Button>
+<Button variant="contained" onClick={onSave}>Save Changes</Button>
+
+
+Gọi callback được truyền từ parent.
+
+🔹 Room Assignment
+
+Cuối cùng gọi component:
+
+<RoomAssignment booking={booking} />
+
+
+Để gán phòng thực tế cho booking này (ví dụ phòng 101, 102...).
+
+🧾 Tổng kết hoạt động logic
+Giai đoạn	Mô tả
+1️⃣ Nhận prop booking	Dữ liệu 1 booking cụ thể từ server
+2️⃣ Format dữ liệu	Các hàm format ngày, tính tổng tiền
+3️⃣ Render UI	Chia thành nhiều section có style Material UI
+4️⃣ Xử lý thay đổi	Khi đổi ngày/số phòng → gọi onFieldChange
+5️⃣ Gọi callback	onSave → lưu về DB; onCancel → hủy chỉnh sửa
+6️⃣ Hiển thị phụ	Gọi RoomAssignment để xem/gán phòng cụ thể
+⚙️ Tóm tắt kỹ thuật
+Thành phần	Công nghệ
+UI framework	Material UI (MUI v5)
+Styling	styled() + sx={}
+Logic	React Hooks (no context/state global)
+Data flow	Controlled props từ parent
+Date logic	Native JS Date object
+Currency	Hiển thị $, không có format locale
+Tái sử dụng	Dễ tích hợp trong dashboard admin
+
+
+
+
+Nếu bạn muốn, mình có thể viết lại đoạn này thành phiên bản tối ưu hơn, ví dụ:
+
+Tách logic ra file riêng (useBookingForm.js)
+
+Hỗ trợ đa ngôn ngữ (i18n)
+
+Format giá tiền theo locale (VNĐ, USD…)
+
+Thêm validate form & toast notification
+
+Bạn có muốn mình viết lại bản tối ưu kèm comment chi tiết từng phần không?
+
+Bạn đã nói:
+viết lại bản tối ưu kèm comment chi tiết từng phần
+ChatGPT đã nói:
+
+Rất hay — đây là một component React khá lớn (trên 600 dòng), nên để tối ưu và dễ bảo trì, ta sẽ:
+✅ Chia nhỏ các phần logic (format date, tính tiền, chip hiển thị trạng thái, v.v.)
+✅ Loại bỏ logic trùng lặp
+✅ Viết lại cú pháp dễ đọc hơn
+✅ Thêm comment chi tiết giải thích từng phần
+
+🔧 Dưới đây là bản viết lại BookingDetails.jsx (tối ưu + có chú thích chi tiết)
+"use client";
+import React from "react";
+import {
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  MenuItem,
+  Button,
+  Divider,
+  Chip,
+  Stack,
+  Skeleton,
+} from "@mui/material";
+import { styled } from "@mui/material/styles";
+import RoomAssignment from "./RoomAssignment";
+
+/* -----------------------------------------------------
+ 🔹 STYLED COMPONENTS: Định nghĩa style riêng cho UI
+----------------------------------------------------- */
+const SummaryCard = styled(Card)(({ theme, color }) => ({
+  borderLeft: `4px solid ${theme.palette[color].main}`,
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "center",
+  transition: "transform 0.2s",
+  "&:hover": { transform: "translateY(-2px)" },
+}));
+
+const SectionHeader = styled(Typography)(({ theme }) => ({
+  marginBottom: theme.spacing(2),
+  fontWeight: 600,
+  color: theme.palette.text.primary,
+  display: "flex",
+  alignItems: "center",
+  "&:before": {
+    content: '""',
+    display: "block",
+    width: "4px",
+    height: "20px",
+    backgroundColor: theme.palette.primary.main,
+    marginRight: theme.spacing(1),
+    borderRadius: "2px",
+  },
+}));
+
+/* -----------------------------------------------------
+ 🔹 HÀM TIỆN ÍCH (Utility Functions)
+----------------------------------------------------- */
+
+// ✅ Định dạng ngày cho <input type="date">
+const formatDateForInput = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0];
+};
+
+// ✅ Hiển thị ngày ở dạng "Oct 5, 2025"
+const formatDateForDisplay = (dateString) => {
+  if (!dateString) return "Not set";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+// ✅ Tính tổng số đêm giữa 2 ngày
+const calculateTotalNights = (checkIn, checkOut) => {
+  if (!checkIn || !checkOut) return 0;
+  const diffTime = new Date(checkOut) - new Date(checkIn);
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
+
+// ✅ Component chip thể hiện trạng thái đặt phòng
+const StatusChip = ({ status }) => {
+  const map = {
+    active: { label: "Confirmed", color: "success" },
+    inactive: { label: "Pending", color: "warning" },
+    cancelled: { label: "Cancelled", color: "error" },
+  };
+  const s = map[status] || { label: status, color: "default" };
+  return <Chip label={s.label} color={s.color} size="small" variant="outlined" />;
+};
+
+// ✅ Component chip thể hiện trạng thái thanh toán
+const PaymentChip = ({ paid }) => (
+  <Chip
+    label={paid === "1" ? "Paid" : "Pending"}
+    color={paid === "1" ? "success" : "warning"}
+    size="small"
+    variant="outlined"
+  />
+);
+
+/* -----------------------------------------------------
+ 🔹 COMPONENT CHÍNH: BookingDetails
+----------------------------------------------------- */
+const BookingDetails = ({ booking, onFieldChange, onSave, onCancel }) => {
+  if (!booking) {
+    // Hiển thị khi đang tải
+    return (
+      <Box sx={{ p: 3 }}>
+        <Skeleton variant="rectangular" height={400} />
+      </Box>
+    );
+  }
+
+  // ✅ Khi user chọn lại ngày CheckIn/CheckOut
+  const handleDateChange = (field, value) => {
+    const newBooking = { ...booking, [field]: value };
+
+    if (newBooking.check_in && newBooking.check_out) {
+      const nights = calculateTotalNights(
+        newBooking.check_in,
+        newBooking.check_out
+      );
+      newBooking.total_night = nights;
+      newBooking.subtotal =
+        nights * newBooking.actual_price * newBooking.number_of_rooms;
+      newBooking.total_price =
+        newBooking.subtotal - (newBooking.discount || 0);
+    }
+
+    onFieldChange(newBooking);
+  };
+
+  /* -----------------------------------------------------
+   🔹 GIAO DIỆN HIỂN THỊ
+  ----------------------------------------------------- */
+  return (
+    <>
+      <Box sx={{ p: 3 }}>
+        {/* ====== THẺ TỔNG QUAN (SUMMARY CARDS) ====== */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          {[
+            {
+              label: "Booking Reference",
+              value: booking.code || "N/A",
+              color: "primary",
+            },
+            {
+              label: "Booking Date",
+              value: formatDateForDisplay(booking.createdAt),
+              color: "secondary",
+            },
+            {
+              label: "Payment Method",
+              value: booking.payment_method,
+              color: "info",
+            },
+          ].map((item, i) => (
+            <Grid item xs={12} sm={6} md={3} key={i}>
+              <SummaryCard color={item.color}>
+                <CardContent>
+                  <Typography variant="caption" color="text.secondary">
+                    {item.label}
+                  </Typography>
+                  <Typography variant="h6" fontWeight="bold">
+                    {item.value}
+                  </Typography>
+                </CardContent>
+              </SummaryCard>
+            </Grid>
+          ))}
+
+          {/* Ô cuối cùng hiển thị trạng thái */}
+          <Grid item xs={12} sm={6} md={3}>
+            <SummaryCard
+              color={booking.payment_status === "1" ? "success" : "warning"}
+            >
+              <CardContent>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <div>
+                    <Typography variant="caption" color="text.secondary">
+                      Payment Status
+                    </Typography>
+                    <PaymentChip paid={booking.payment_status} />
+                  </div>
+                  <div>
+                    <Typography variant="caption" color="text.secondary">
+                      Booking Status
+                    </Typography>
+                    <StatusChip status={booking.status} />
+                  </div>
+                </Stack>
+              </CardContent>
+            </SummaryCard>
+          </Grid>
+        </Grid>
+
+        {/* ====== THÔNG TIN ĐẶT PHÒNG ====== */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <SectionHeader variant="h6">Booking Details</SectionHeader>
+            <Grid container spacing={3}>
+              {/* Bên trái: Thông tin phòng */}
+              <Grid item xs={12} md={6}>
+                <Box sx={{ p: 2, bgcolor: "action.hover", borderRadius: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="medium">
+                    Room Information
+                  </Typography>
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid item xs={6} sm={4}>
+                      <Typography variant="caption" color="text.secondary">
+                        Room Type
+                      </Typography>
+                      <Typography>
+                        {booking.rooms_id?.roomtype_id?.name || "N/A"}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6} sm={4}>
+                      <Typography variant="caption">Rooms</Typography>
+                      <Typography>{booking.number_of_rooms}</Typography>
+                    </Grid>
+                    <Grid item xs={6} sm={4}>
+                      <Typography variant="caption">Price/Night</Typography>
+                      <Typography>${booking.actual_price}</Typography>
+                    </Grid>
+                    <Grid item xs={6} sm={4}>
+                      <Typography variant="caption">Total Nights</Typography>
+                      <Typography>
+                        {calculateTotalNights(booking.check_in, booking.check_out)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6} sm={4}>
+                      <Typography variant="caption">Guests</Typography>
+                      <Typography>{booking.person}</Typography>
+                    </Grid>
+                  </Grid>
+                </Box>
+              </Grid>
+
+              {/* Bên phải: Ngày & Số phòng */}
+              <Grid item xs={12} md={6}>
+                <Box sx={{ p: 2, bgcolor: "action.hover", borderRadius: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="medium">
+                    Stay Duration
+                  </Typography>
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Check-In"
+                        type="date"
+                        value={formatDateForInput(booking.check_in)}
+                        onChange={(e) =>
+                          handleDateChange("check_in", e.target.value)
+                        }
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Check-Out"
+                        type="date"
+                        value={formatDateForInput(booking.check_out)}
+                        onChange={(e) =>
+                          handleDateChange("check_out", e.target.value)
+                        }
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+
+                    {/* Số phòng */}
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Number of Rooms"
+                        type="number"
+                        value={booking.number_of_rooms}
+                        onChange={(e) => {
+                          const inputValue = parseInt(e.target.value) || 1;
+                          const maxRooms = booking.availableRooms || 1;
+                          const newRooms = Math.min(inputValue, maxRooms);
+                          const nights = calculateTotalNights(
+                            booking.check_in,
+                            booking.check_out
+                          );
+
+                          const subtotal =
+                            nights * booking.actual_price * newRooms;
+
+                          onFieldChange({
+                            ...booking,
+                            number_of_rooms: newRooms,
+                            subtotal,
+                            total_price: subtotal - (booking.discount || 0),
+                          });
+                        }}
+                        fullWidth
+                        inputProps={{
+                          min: 1,
+                          max: booking.availableRooms || 1,
+                        }}
+                      />
+                      <Typography>
+                        Available Rooms: {booking.availableRooms || 1}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Box>
+              </Grid>
+            </Grid>
+
+            {/* Tổng tiền */}
+            <Divider sx={{ my: 3 }} />
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={8}></Grid>
+              <Grid item xs={12} md={4}>
+                <Box sx={{ p: 2, borderRadius: 1 }}>
+                  <Stack spacing={1}>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography>Subtotal:</Typography>
+                      <Typography fontWeight="medium">
+                        ${booking.subtotal}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography>Discount:</Typography>
+                      <Typography color="error.main">
+                        -${booking.discount || 0}
+                      </Typography>
+                    </Stack>
+                    <Divider />
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="subtitle1">Total:</Typography>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        ${Number(booking.total_price).toFixed(2)}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {/* ====== QUẢN LÝ TRẠNG THÁI ====== */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <SectionHeader variant="h6">Status Management</SectionHeader>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  select
+                  label="Payment Status"
+                  value={booking.payment_status}
+                  onChange={(e) =>
+                    onFieldChange({
+                      ...booking,
+                      payment_status: e.target.value,
+                    })
+                  }
+                  fullWidth
+                >
+                  <MenuItem value="0">Pending</MenuItem>
+                  <MenuItem value="1">Paid</MenuItem>
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  select
+                  label="Booking Status"
+                  value={booking.status}
+                  onChange={(e) =>
+                    onFieldChange({
+                      ...booking,
+                      status: e.target.value,
+                    })
+                  }
+                  fullWidth
+                >
+                  <MenuItem value="inactive">Pending</MenuItem>
+                  <MenuItem value="active">Confirmed</MenuItem>
+                  <MenuItem value="cancelled">Cancelled</MenuItem>
+                </TextField>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {/* ====== THÔNG TIN KHÁCH HÀNG ====== */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <SectionHeader variant="h6">Customer Information</SectionHeader>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField label="Full Name" value={booking.name} fullWidth />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField label="Email" value={booking.email} fullWidth />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField label="Phone" value={booking.phone} fullWidth />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {/* ====== NÚT HÀNH ĐỘNG ====== */}
+        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+          <Button variant="outlined" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={onSave}>
+            Save Changes
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Phân bổ phòng */}
+      <RoomAssignment booking={booking} />
+    </>
+  );
+};
+
+export default BookingDetails;
+
+💡 Giải thích chính:
+Thành phần	Vai trò
+SummaryCard, SectionHeader	Styled components giúp tạo giao diện nhất quán.
+formatDateForInput, formatDateForDisplay	Chuyển định dạng ngày giữa JS và input HTML.
+calculateTotalNights	Tính tổng số đêm giữa check-in & check-out.
+StatusChip, PaymentChip	Hiển thị chip màu tương ứng với trạng thái đặt phòng / thanh toán.
+handleDateChange	Khi người dùng đổi ngày → cập nhật lại subtotal & total.
+onFieldChange	Callback gửi dữ liệu thay đổi về component cha để xử lý.
+RoomAssignment	Sub-component để gán phòng cho khách (render ở cuối).
+
+Nếu bạn muốn, mình có thể tách file này thành 3 component nhỏ hơn (BookingSummary, BookingForm, StatusManager) để mã gọn, dễ bảo trì và tái sử dụng — bạn có muốn mình chia tiếp như vậy không?
+
+Bạn đã nói:
+tách file này thành 3 component nhỏ hơn (BookingSummary, BookingForm, StatusManager) để mã gọn, dễ bảo trì và tái sử dụng
+ChatGPT đã nói:
+
+Rất hay 👍 — tách component theo hướng "Single Responsibility" (mỗi component phụ trách một phần rõ ràng) giúp mã gọn, dễ đọc, dễ tái sử dụng và dễ test.
+
+Giả sử file gốc của bạn là BookingComponent.js, ta sẽ chia thành:
+
+BookingSummary.js → Hiển thị tổng quan booking (giá, ngày, phòng...)
+
+BookingForm.js → Form nhập thông tin khách hàng, phương thức thanh toán
+
+StatusManager.js → Quản lý trạng thái (đang đặt, hoàn tất, lỗi...), xử lý gọi API
+
+🧩 Cấu trúc thư mục mới
+/component/Bookingdetails/
+│
+├── BookingComponent.js        <-- Component chính
+├── BookingSummary.js           <-- Hiển thị thông tin booking
+├── BookingForm.js              <-- Nhập thông tin thanh toán
+└── StatusManager.js            <-- Quản lý logic đặt phòng
+
+📘 1. BookingSummary.js
+"use client";
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+
+export default function BookingSummary({ roomInfo, checkIn, checkOut, total, nights, guests }) {
+  return (
+    <Card className="p-4 rounded-2xl shadow-sm bg-white">
+      <CardContent>
+        <h2 className="text-xl font-semibold mb-3">Booking Summary</h2>
+        <p><strong>Room:</strong> {roomInfo?.name || "N/A"}</p>
+        <p><strong>Check-in:</strong> {checkIn}</p>
+        <p><strong>Check-out:</strong> {checkOut}</p>
+        <p><strong>Nights:</strong> {nights}</p>
+        <p><strong>Guests:</strong> {guests}</p>
+        <p className="text-lg mt-3"><strong>Total:</strong> ${total.toFixed(2)}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+🟢 Giải thích
+
+Chỉ phụ trách hiển thị dữ liệu, không có logic xử lý.
+
+Nhận props từ component cha để tái sử dụng ở nhiều nơi (trang thanh toán, lịch sử đặt phòng...).
+
+📗 2. BookingForm.js
+"use client";
+import React from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+export default function BookingForm({ billingDetails, setBillingDetails, onSubmit, isLoading }) {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setBillingDetails((prev) => ({ ...prev, [name]: value }));
+  };
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit();
+      }}
+      className="bg-white p-4 rounded-2xl shadow-sm space-y-3"
+    >
+      <h2 className="text-xl font-semibold mb-2">Billing Information</h2>
+      <Input name="name" placeholder="Full name" value={billingDetails.name} onChange={handleChange} required />
+      <Input name="email" placeholder="Email" value={billingDetails.email} onChange={handleChange} required />
+      <Input name="phone" placeholder="Phone" value={billingDetails.phone} onChange={handleChange} />
+      <Input name="address" placeholder="Address" value={billingDetails.address} onChange={handleChange} />
+      <Input name="state" placeholder="State" value={billingDetails.state} onChange={handleChange} />
+      <Input name="zipCode" placeholder="ZIP Code" value={billingDetails.zipCode} onChange={handleChange} />
+      <Button type="submit" disabled={isLoading} className="w-full mt-2">
+        {isLoading ? "Processing..." : "Confirm Booking"}
+      </Button>
+    </form>
+  );
+}
+
+
+🟢 Giải thích
+
+Giao diện nhập thông tin thanh toán.
+
+Nhận setBillingDetails từ cha → giúp cập nhật state ngoài.
+
+onSubmit() được truyền từ component cha để linh hoạt đổi hành động (POST API, kiểm tra logic, v.v.)
+
+📙 3. StatusManager.js
+"use client";
+import { useState } from "react";
+import { toast } from "react-hot-toast";
+
+export default function useStatusManager() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState("idle"); // idle | processing | success | error
+
+  // Hàm xử lý đặt phòng
+  const handleBooking = async (payload) => {
+    setIsLoading(true);
+    setStatus("processing");
+
+    try {
+      const res = await fetch("/api/booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Booking failed");
+      const data = await res.json();
+
+      toast.success("Booking successful!");
+      setStatus("success");
+      return data;
+    } catch (err) {
+      console.error(err);
+      toast.error("Error placing booking");
+      setStatus("error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { isLoading, status, handleBooking };
+}
+
+
+🟢 Giải thích
+
+Đây là custom hook tách riêng logic xử lý trạng thái.
+
+Có thể tái sử dụng cho các phần khác (VD: đặt phòng, thanh toán, huỷ đặt...).
+
+Quản lý loading, thông báo, và kết quả API trong cùng một nơi.
+
+📒 4. BookingComponent.js (gộp lại)
+"use client";
+import React, { useState } from "react";
+import BookingSummary from "./BookingSummary";
+import BookingForm from "./BookingForm";
+import useStatusManager from "./StatusManager";
+
+export default function BookingComponent({ roomInfo, checkIn, checkOut, total, nights, guests }) {
+  const { isLoading, handleBooking } = useStatusManager();
+  const [billingDetails, setBillingDetails] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    state: "",
+    zipCode: "",
+  });
+
+  const handleSubmit = async () => {
+    const payload = {
+      room_id: roomInfo?._id,
+      checkIn,
+      checkOut,
+      total,
+      nights,
+      guests,
+      billingDetails,
+    };
+
+    await handleBooking(payload);
+  };
+
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
+      <BookingSummary
+        roomInfo={roomInfo}
+        checkIn={checkIn}
+        checkOut={checkOut}
+        total={total}
+        nights={nights}
+        guests={guests}
+      />
+
+      <BookingForm
+        billingDetails={billingDetails}
+        setBillingDetails={setBillingDetails}
+        onSubmit={handleSubmit}
+        isLoading={isLoading}
+      />
+    </div>
+  );
+}
+
+✅ Lợi ích sau khi tách
+Tiêu chí	Trước khi tách	Sau khi tách
+Độ dài file	>200 dòng	Mỗi file <80 dòng
+Dễ bảo trì	Khó, nhiều logic lẫn lộn	Rõ ràng từng chức năng
+Tái sử dụng	Không thể	Có thể dùng lại ở nhiều nơi
+Test đơn vị (unit test)	Khó mock từng phần	Dễ mock từng component
+
+Bạn có muốn mình thêm luôn transaction + availability check (khi bấm confirm booking thì kiểm tra phòng trống và lưu trong DB an toàn bằng transaction MongoDB) vào hệ thống component này không?
+→ Nếu có, mình sẽ tích hợp nó trực tiếp trong hook useStatusManager() cho bạn.
