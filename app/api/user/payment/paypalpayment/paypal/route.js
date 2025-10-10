@@ -6,7 +6,7 @@ import { authOptions } from "@/utils/authOptions";
 
 import Booking from "@/model/booking";
 import paypal from '@paypal/checkout-server-sdk'; // Import PayPal SDK for handling PayPal transactions
-import RoomBookedDate from "@/model/RoomBookedDate";
+import RoomBookedDate from "@/model/roombookeddate";
 
 
 

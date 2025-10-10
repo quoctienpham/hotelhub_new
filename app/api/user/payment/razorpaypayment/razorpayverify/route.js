@@ -44,6 +44,8 @@ export async function POST(req) {
       }
 
       console.log("Updated booking:", updatedBooking);
+
+      console.log("Payment successful and booking updated");
       
       return NextResponse.json(
         { success: "Payment successful and booking updated" },

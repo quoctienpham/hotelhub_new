@@ -18,7 +18,7 @@ import { useState } from 'react';
 import { Container, Box, Modal, Grid, Typography, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import Image from 'next/image';
-import Top from "@/components/topimage/Top"
+import Top from "@/component/topimage/Top"
 
 const ImageGallery = () => {
     const [open, setOpen] = useState(false);
