@@ -6,7 +6,7 @@ import { authOptions } from "@/utils/authOptions";
 
 import Booking from "@/model/booking";
 
-import RoomBookedDate from "@/model/RoomBookedDate";
+import RoomBookedDate from "@/model/roombookeddate";
 import Stripe from "stripe"; // Import Stripe API library for handling payments
 
 // Initialize a Stripe instance with the secret key (make sure to replace it with a secure key in production)
