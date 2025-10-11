@@ -1,7 +1,8 @@
 // app/api/admin/generate-categories/route.js
 import { NextResponse } from "next/server";
 import { runAi } from "@/ai/ai";
-import { dbConnect } from "@/utils/dbConnect";
+import dbConnect from "@/utils/dbConnect";
+// import { dbConnect } from "@/utils/dbConnect";
 import Prompt from "@/model/prompt";
 
 /**
