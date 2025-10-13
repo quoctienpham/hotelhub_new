@@ -1,3 +1,5 @@
+"use client";
+
 import { styled } from "@mui/system";
 
 import { Card, CardMedia, Box, Typography } from "@mui/material";

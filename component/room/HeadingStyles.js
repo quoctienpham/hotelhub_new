@@ -1,3 +1,5 @@
+"use client";
+
 export const mainHeadingStyles = {
     fontWeight: "900",
     background: "linear-gradient(90deg, #ff6a00, #ee0979)",
