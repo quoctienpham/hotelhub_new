@@ -41,7 +41,7 @@ const userSchema = new mongoose.Schema(
     address: {
       type: String,
       default: "",
-      unique: true,
+      // unique: true
     },
 
     country: {
