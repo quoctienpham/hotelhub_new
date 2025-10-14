@@ -1,4 +1,6 @@
 "use client";
+export const dynamic = "force-dynamic"; // ⚡ Tắt prerender khi build
+
 import { useState, useEffect } from "react";
 
 import HotelDetails from "@/component/Bookingdetails/BookingComponent";
