@@ -11,7 +11,7 @@ export const selectStyles = {
 };
 
 export const BackgroundContainer = styled("div")({
-  backgroundImage: "url(/images/hotel9.jpg)",
+  backgroundImage: "url(/images/vnn1.jpg)",
   backgroundSize: "cover",
   backgroundRepeat: "no-repeat",
   backgroundPosition: "center",
